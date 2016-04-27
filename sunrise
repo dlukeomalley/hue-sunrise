@@ -2,24 +2,25 @@
 
 import requests
 from dateutil.parser import parse
+from datetime import date, timedelta
 import pytz
-import pdb
-
 
 def getSunriseDatetime(lat, lng):
 	# Sunrise Sunset provides our sunrise and sunset times: http://sunrise-sunset.org/api
-	# Datetime is UTC
-
-	sunJson = requests.get("http://api.sunrise-sunset.org/json?lat={}&lng={}&date=tomorrow&formatted=0".format(lat, lng)).json()
+	# We calculate the explicit date to avoid timezone issues with the api provider
+	tomorrow = date.today() + timedelta(days=1)
+	sunJson = requests.get("http://api.sunrise-sunset.org/json?lat={}&lng={}&date={}&formatted=0".format(lat, lng, tomorrow)).json()
 	sunriseTimeString = sunJson['results']['sunrise']
-
+	
+	# print sunJson
 	# Sample sunriseTimeString: 2016-04-21T13:24:28+00:00
 	return parse(sunriseTimeString)
 
 def main():
 	hueToken = "DfVZeleoILd4pIe2ZvM2UfVCcea9OiBbH8biB49b"
 	alarmId = "0415713780126651"
-	hueUrl = "http://192.168.1.137/api/{}/schedules/{}".format(hueToken, alarmId)
+	hueIp = "192.168.1.137"
+	hueUrl = "http://{}/api/{}/schedules/{}".format(hueIp, hueToken, alarmId)
 
 	weekBitmask = 124
 
@@ -30,7 +31,7 @@ def main():
 	sunriseDt = sunriseUtc.astimezone(pacific)
 	hueTime = "W{}/T{}".format(weekBitmask, sunriseDt.strftime("%H:%M:%S"))
 	
-	payload = {"localtime":hueTime}
+	payload = {"name":"[{}] Sunrise Alarm".format(sunriseDt.date()), "localtime":hueTime}
 	result = requests.put(hueUrl, json=payload)
 	print result.json()
 
