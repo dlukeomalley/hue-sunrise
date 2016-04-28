@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 
+import config
 import requests
-from dateutil.parser import parse
 from datetime import date, timedelta
+from dateutil.parser import parse
 import pytz
 
 def getSunriseDatetime(date, location, tzinfo="UTC"):
@@ -16,22 +17,23 @@ def getSunriseDatetime(date, location, tzinfo="UTC"):
 	sunriseDt = parse(sunriseTimeString)
 	return sunriseDt.astimezone(pytz.timezone(tzinfo))
 
-def main():
-	hueToken = "DfVZeleoILd4pIe2ZvM2UfVCcea9OiBbH8biB49b"
-	alarmId = "0415713780126651"
-	hueIp = "192.168.1.137"
-	hueUrl = "http://{}/api/{}/schedules/{}".format(hueIp, hueToken, alarmId)
-
-	weekBitmask = 124
-
-	# Lat & Long for San Francisco, CA, USA are 37.7749, -122.4194
-	tomorrow = date.today() + timedelta(days=1)
-	sunriseDt = getSunriseDatetime(tomorrow, (37.7749, -122.4194), 'US/Pacific')
-	hueTime = "W{}/T{}".format(weekBitmask, sunriseDt.strftime("%H:%M:%S"))
+def setHueSchedule(days, time):
+	url = "http://{ip}/api/{token}/schedules/{scheduleId}".format(scheduleId=config.SCHEDULE_ID, \
+																          ip=config.IP,          \
+																       token=config.USER_TOKEN)
 	
-	payload = {"name":"[{}] Sunrise Alarm".format(sunriseDt.date()), "localtime":hueTime}
-	result = requests.put(hueUrl, json=payload)
-	print result.json()
+	formattedTime = "W{}/T{}".format(days, time.strftime("%H:%M:%S"))
+	payload = {"name":"[{}] Sunrise Alarm".format(time.date()), "localtime":formattedTime}
+	result = requests.put(url, json=payload)
+	return results.json
+	
+def main():
+	tomorrow = date.today() + timedelta(days=1)
+	# Lat & Long for San Francisco, CA, USA are 37.7749, -122.4194
+	sunriseDt = getSunriseDatetime(tomorrow, (37.7749, -122.4194), 'US/Pacific')
+	
+	setHueSchedule(0b1111111, sunriseDt)
 
 if __name__ == "__main__":
-    main()
+	main()
+	
