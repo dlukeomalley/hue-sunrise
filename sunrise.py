@@ -5,16 +5,16 @@ from dateutil.parser import parse
 from datetime import date, timedelta
 import pytz
 
-def getSunriseDatetime(lat, lng):
+def getSunriseDatetime(date, location, tzinfo="UTC"):
 	# Sunrise Sunset provides our sunrise and sunset times: http://sunrise-sunset.org/api
 	# We calculate the explicit date to avoid timezone issues with the api provider
-	tomorrow = date.today() + timedelta(days=1)
-	sunJson = requests.get("http://api.sunrise-sunset.org/json?lat={}&lng={}&date={}&formatted=0".format(lat, lng, tomorrow)).json()
+	lat, lng = location
+	sunJson = requests.get("http://api.sunrise-sunset.org/json?lat={}&lng={}&date={}&formatted=0".format(lat, lng, date)).json()
 	sunriseTimeString = sunJson['results']['sunrise']
-	
-	# print sunJson
+
 	# Sample sunriseTimeString: 2016-04-21T13:24:28+00:00
-	return parse(sunriseTimeString)
+	sunriseDt = parse(sunriseTimeString)
+	return sunriseDt.astimezone(pytz.timezone(tzinfo))
 
 def main():
 	hueToken = "DfVZeleoILd4pIe2ZvM2UfVCcea9OiBbH8biB49b"
@@ -25,10 +25,8 @@ def main():
 	weekBitmask = 124
 
 	# Lat & Long for San Francisco, CA, USA are 37.7749, -122.4194
-	sunriseUtc = getSunriseDatetime(37.7749, -122.4194)
-
-	pacific = pytz.timezone('US/Pacific')
-	sunriseDt = sunriseUtc.astimezone(pacific)
+	tomorrow = date.today() + timedelta(days=1)
+	sunriseDt = getSunriseDatetime(tomorrow, (37.7749, -122.4194), 'US/Pacific')
 	hueTime = "W{}/T{}".format(weekBitmask, sunriseDt.strftime("%H:%M:%S"))
 	
 	payload = {"name":"[{}] Sunrise Alarm".format(sunriseDt.date()), "localtime":hueTime}
