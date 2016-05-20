@@ -16,21 +16,21 @@ def getSunriseDatetime(date, location, tzinfo="UTC"):
 	sunriseDt = parse(sunriseTimeString)
 	return sunriseDt.astimezone(pytz.timezone(tzinfo))
 
-def setHueSchedule(scheduleId, dT, recurrence=None):
-	url = "http://{ip}/api/{token}/schedules/{scheduleId}".format(scheduleId=scheduleId, \
-		ip=config.IP, \
-		token=config.USER_TOKEN)
+def getBaseUrl():
+	return "http://{ip}/api/{token}".format(ip=config.IP, token=config.USER_TOKEN)
 
+def setHueSchedule(scheduleId, dT, recurrence=None):
+	url = "{baseUrl}/schedules/{scheduleId}".format(baseUrl=getBaseUrl(), scheduleId=scheduleId)
 	formattedTime = None
 	time = dT.strftime("%H:%M:%S")
-	if days:
-		formattedTime = "W{}T{}".format(recurrence, time)
+	if recurrence:
+		formattedTime = "W{}/T{}".format(recurrence, time)
 	else:
 		formattedTime = "{}T{}".format(dT.date(), time)
 
-	payload = {"name":"[{}] Sunrise Alarm".format(time.date()), "localtime":formattedTime}
+	payload = {"name":"[{}] Sunrise Alarm".format(dT.date()), "localtime":formattedTime}
 	result = requests.put(url, json=payload)
-	return results.json
+	return result.json()
 	
 def main():
 	tomorrow = date.today() + timedelta(days=1)
